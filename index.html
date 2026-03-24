@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>语音录制</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .header h1 { font-size: 1.3rem; margin-bottom: 15px; }
+        .language-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .lang-tab {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .lang-tab.active {
+            background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+        }
+        
+        .progress-bar {
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        .progress-bar progress {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+        }
+        progress::-webkit-progress-bar { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        progress::-webkit-progress-value { background: #00d9ff; border-radius: 4px; }
+        
+        .text-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .text-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .text-item .index {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 8px;
+        }
+        .text-item .text {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        .text-item .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-record { background: #e94560; color: white; }
+        .btn-record.recording { animation: pulse 1s infinite; }
+        .btn-stop { background: #444; color: white; }
+        .btn-replay { background: #FF9800; color: white; }
+        .btn-rerecord { background: #4CAF50; color: white; }
+        .btn:disabled { opacity: 0.5; }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #e94560;
+            font-size: 0.9rem;
+        }
+        .recording-indicator.active { display: flex; }
+        .rec-dot {
+            width: 10px;
+            height: 10px;
+            background: #e94560;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+        
+        .current-text {
+            background: rgba(233,69,96,0.2);
+            border: 1px solid #e94560;
+        }
+        
+        .has-recording {
+            border-left: 3px solid #4CAF50;
+        }
+        
+        .share-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(76,175,80,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎙️ 语音录制</h1>
+        <div class="language-tabs" id="langTabs"></div>
+    </div>
+    
+    <div class="progress-bar">
+        <span>进度:</span>
+        <progress id="progress" value="0" max="80"></progress>
+        <span id="progressText">0/80</span>
+    </div>
+    
+    <div class="text-list" id="textList"></div>
+    
+    <button class="share-btn" onclick="shareAll()">📤</button>
+    
+    <script>
+        // 语言数据
+        const languages = ['Chinese', 'English', 'French', 'German', 'Italian', 'Spanish', 'Portugal', 'SaudiArabic'];
+        
+        // 语音文本（从Excel提取的数据）
+        const texts = [
+            { Chinese: "暂停播放Spotify", English: "Pause Spotify playback.", French: "Mettre en pause la lecture sur Spotify.", German: "Wiedergabe auf Spotify pausieren", Italian: "Metti in pausa la riproduzione su Spotify.", Spain: "Pausar la reproducción de Spotify.", Portugal: "Pausar a reprodução no Spotify.", Arabic: "إيقاف مؤقت لتشغيل سبوتيفاي" },
+            { Chinese: "从第一分钟开始播放", English: "Play from the first minute.", French: "Commencer la lecture dès la première minute.", German: "Ab der ersten Minute abspielen.", Italy: "Riproduci dall'inizio.", Spain: "Reproducir desde el primer minuto.", Portugal: "Reproduzir desde o primeiro minuto", Arabic: "ابدأ التشغيل من الدقيقة الأولى." },
+            { Chinese: "快进30秒", English: "Fast forward 30 seconds.", French: "Avancer de 30 secondes.", German: "30 Sekunden vorspulen.", Italy: "Avanzare di 30 secondi.", Spain: "Adelanta 30 segundos.", Portugal: "Avançar 30 segundos.", Arabic: "تقديم 30 ثانية للأمام." },
+            { Chinese: "切换为单曲循环", English: "Switch to single track repeat", French: "Passer en mode répétition d'une seule chanson", German: "Wechseln zu Einzeltitel-Wiederholung", Italy: "Passa alla riproduzione in loop di un singolo brano.", Spain: "Cambiar a repetición de una sola canción.", Portugal: "Mudar para repetição de faixa única", Arabic: "التبديل إلى تكرار الأغنية الواحدة." },
+            { Chinese: "打开FM列表", English: "Open the FM list.", French: "Ouvrir la liste FM.", German: "Öffnen Sie die FM-Liste.", Italy: "Apri l'elenco FM.", Spain: "Abrir la lista de FM.", Portugal: "Abrir lista FM", Arabic: "افتح قائمة FM" },
+            { Chinese: "帮我收藏这首歌", English: "Save this song for me.", French: "Aide-moi à ajouter cette chanson à mes favoris.", German: "Hilf mir, dieses Lied zu speichern.", Italy: "Aggiungi questa canzone ai preferiti per me.", Spain: "Ayúdame a guardar esta canción.", Portugal: "Guarde esta música para mim.", Arabic: "ساعدني في إضافة هذه الأغنية إلى المفضلة" },
+            { Chinese: "播放Apple Music的历史记录", English: "Play Apple Music history records.", French: "Historique de lecture d'Apple Music", German: "Wiedergabeverlauf von Apple Music", Italy: "Cronologia di riproduzione di Apple Music", Spain: "Historial de reproducción de Apple Music", Portugal: "Histórico de reprodução do Apple Music.", Arabic: "سجل تشغيل Apple Music" },
+            { Chinese: "下一首播放稻香", English: "Play the next song \"Rice Aroma.\"", French: "Lire la chanson suivante : « Dao Xiang ».", German: "Nächster Titel: \"Reisduft\" abspielen.", Italy: "La prossima canzone in riproduzione è \"稻香\".", Spain: "La siguiente canción que se reproducirá es \"稻香\" (Aroma de arroz).", Portugal: "Próxima música: Tocar \"稻香\".", Arabic: "تشغيل الأغنية التالية \"عطر الأرز\"." },
+            { Chinese: "高清播放", English: "High-definition playback", French: "Lecture en haute définition", German: "Hochauflösende Wiedergabe", Italy: "Riproduzione in alta definizione", Spain: "Reproducción en alta definición", Portugal: "Reprodução em alta definição", Arabic: "تشغيل عالي الدقة" },
+            { Chinese: "2倍速播放", English: "Play at 2x speed", French: "Lecture à 2x.", German: "Doppelte Geschwindigkeit abspielen.", Italy: "Riproduzione a 2x velocità.", Spain: "Reproducir a 2x velocidad.", Portugal: "Reprodução a 2x de velocidade.", Arabic: "تشغيل بسرعة 2x" },
+            { Chinese: "我打8分", English: "I give it 8 points.", French: "Je donne 8 sur 10.", German: "Ich gebe 8 Punkte.", Italy: "Il mio voto è 8.", Spain: "Le doy 8 puntos.", Portugal: "Eu dou 8 pontos.", Arabic: "أنا أعطيه 8 من 10." },
+            { Chinese: "我想听AM", English: "I want to listen to AM.", French: "Je veux écouter AM.", German: "Ich möchte AM hören.", Italy: "Vorrei ascoltare AM.", Spain: "Quiero escuchar AM.", Portugal: "Eu quero ouvir AM.", Arabic: "أريد الاستماع إلى AM" },
+            { Chinese: "我想听周杰伦的歌", English: "I want to listen to Jay Chou's songs.", French: "Je veux écouter les chansons de Jay Chou.", German: "Ich möchte Lieder von Jay Chou hören.", Italy: "Voglio ascoltare le canzoni di Jay Chou.", Spain: "Quiero escuchar las canciones de Jay Chou.", Portugal: "Eu quero ouvir as músicas de Jay Chou.", Arabic: "أريد أن أستمع إلى أغاني جاي تشو" },
+            { Chinese: "帮我播放三国系列", English: "Play the Three Kingdoms series for me.", French: "Aidez-moi à jouer la série des Trois Royaumes.", German: "Bitte spiele die Serie \"Die Drei Reiche\" für mich ab.", Italy: "Riproduci per me la serie dei Tre Regni.", Spain: "Reproduce la serie de los Tres Reinos para mí.", Portugal: "Toque a série dos Três Reinos para mim.", Arabic: "ساعدني في تشغيل سلسلة الممالك الثلاث." },
+            { Chinese: "我想看成龙主演的电影", English: "I want to watch a movie starring Jackie Chan.", French: "Je veux regarder un film avec Jackie Chan.", German: "Ich möchte einen Film mit Jackie Chan in der Hauptrolle sehen.", Italy: "Voglio vedere un film interpretato da Jackie Chan.", Spain: "Quiero ver una película protagonizada por Jackie Chan.", Portugal: "Eu quero assistir a um filme estrelado por Jackie Chan.", Arabic: "أود مشاهدة فيلم بطولة جاكي شان" },
+            { Chinese: "这首歌叫什么名字", English: "What is the name of this song?", French: "Comment s'appelle cette chanson ?", German: "Wie heißt dieses Lied?", Italy: "Il titolo di questa canzone qual è?", Spain: "¿Cómo se llama esta canción?", Portugal: "O nome dessa música é?", Arabic: "ما اسم هذه الأغنية؟" },
+            { Chinese: "打开悬浮歌词", English: "Open floating lyrics.", French: "Afficher les paroles flottantes.", German: "Öffne die schwebenden Songtexte.", Italy: "Apri i testi galleggianti.", Spain: "Abrir la letra flotante.", Portugal: "Abrir letras flutuantes", Arabic: "افتح كلمات الأغاني العائمة" },
+            { Chinese: "切换为蓝牙音乐", English: "Switch to Bluetooth music.", French: "Basculer sur la musique Bluetooth.", German: "Zu Bluetooth-Musik wechseln.", Italy: "Passa alla musica Bluetooth.", Spain: "Cambiar a música por Bluetooth.", Portugal: "Alternar para música Bluetooth.", Arabic: "تبديل إلى موسيقى البلوتوث" },
+            { Chinese: "我不喜欢这首歌", English: "I don't like this song.", French: "Je n'aime pas cette chanson.", German: "Ich mag dieses Lied nicht.", Italy: "Non mi piace questa canzone.", Spain: "No me gusta esta canción.", Portugal: "Eu não gosto desta música.", Arabic: "أنا لا أحب هذه الأغنية" },
+            { Chinese: "播放抖音热歌榜", English: "Play the TikTok Hot Songs Chart.", French: "Lire le classement des chansons populaires de Douyin.", German: "Den TikTok-Hitparade abspielen.", Italy: "Riproduci la classifica delle canzoni popolari di Douyin.", Spain: "Reproducir la lista de canciones populares de Douyin.", Portugal: "Tocar a lista de músicas populares do Douyin.", Arabic: "تشغيل قائمة الأغاني الشهيرة على تطبيق دوين" },
+            // ... 更多数据
+        ];
+
+        // 补充剩余数据（简略版）
+        const moreTexts = [
+            "导航到哈佛大学", "导航到世界之窗走不堵车最快的路线", "导航到最近的加油站", "帮我找找附近人均200块钱左右的自助餐店",
+            "我想去可以带宠物的餐厅", "附近有哪些5A级景区", "帮我看看第一人民医院附近有哪些餐厅", "搜一下评论最多的电影院",
+            "帮我找找附近评分最高的酒吧", "搜一下附近有空位的充电桩", "找一下五星级酒店", "我要先去世界之窗再去深圳北最后去百度国际大厦",
+            "沿途有没有加油站", "我现在在哪里", "前面堵不堵车", "开始导航", "打开巡航模式", "刷新路线",
+            "切换到红绿灯少的路线", "把世界之窗添加到途经点", "删除第一个途经点", "帮我把导航播报的声音切换为女声",
+            "回家", "帮我打开日程提醒", "切换成女性形象", "静音", "帮我打开蓝牙", "屏幕调亮一点",
+            "帮我把昼夜模式切换成自动", "把屏幕字体变大一些", "打开360", "关闭投屏", "屏幕切换到二排屏投屏",
+            "切换壁纸", "帮我打开儿童座椅界面", "停止语音播报", "声音大一点", "把导航音量调到最大",
+            "帮我打开空调", "打开内循环", "打开前除霜", "把空调温度调低一点", "把空调的风量调小一档",
+            "打开座椅按摩", "把座椅加热调高一档", "把座椅加热设置成10分钟后关掉", "把我的座椅往前面调一点",
+            "记住我当前的座椅位置", "帮我打开车窗", "把车窗开大一些", "把天窗调到最大", "打开遮阳帘",
+            "打开后备箱", "切换氛围灯颜色", "把氛围灯的亮度调暗一点", "打开后视镜加热", "关闭方向盘自动加热",
+            "打开后排儿童锁", "打开超级节能模式", "打开油箱盖"
+        ];
+
+        // 合并文本数据
+        const allTexts = texts.concat(moreTexts.map(t => ({
+            Chinese: t, English: "[English]", French: "[French]", German: "[German]", 
+            Italy: "[Italian]", Spain: "[Spanish]", Portugal: "[Portuguese]", Arabic: "[Arabic]"
+        })));
+
+        // 状态
+        let currentLang = 'Chinese';
+        let recordings = {}; // { "Chinese-0": blob, "English-1": blob, ... }
+        let currentRecording = null; // 当前正在录音的项
+        let mediaRecorder = null;
+        let mediaStream = null;
+        let audioChunks = [];
+
+        // 初始化语言标签
+        function initLangTabs() {
+            const container = document.getElementById('langTabs');
+            languages.forEach((lang, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `lang-tab ${lang === currentLang ? 'active' : ''}`;
+                btn.textContent = lang;
+                btn.onclick = () => switchLang(lang);
+                container.appendChild(btn);
+            });
+        }
+
+        // 切换语言
+        function switchLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === lang);
+            });
+            renderTextList();
+        }
+
+        // 获取对应语言的字段名
+        function getLangField(lang) {
+            const map = {
+                'Chinese': 'Chinese',
+                'English': 'English',
+                'French': 'French',
+                'German': 'German',
+                'Italian': 'Italian',
+                'Spanish': 'Spain',
+                'Portugal': 'Portugal',
+                'SaudiArabic': 'Arabic'
+            };
+            return map[lang] || 'Chinese';
+        }
+
+        // 渲染文本列表
+        function renderTextList() {
+            const container = document.getElementById('textList');
+            container.innerHTML = '';
+            
+            const field = getLangField(currentLang);
+            
+            allTexts.forEach((item, idx) => {
+                const text = item[field] || item['Chinese'];
+                const key = `${currentLang}-${idx}`;
+                const hasRecording = recordings[key] !== undefined;
+                
+                const div = document.createElement('div');
+                div.className = `text-item ${hasRecording ? 'has-recording' : ''} ${currentRecording === key ? 'current-text' : ''}`;
+                div.id = `item-${key}`;
+                div.innerHTML = `
+                    <div class="index">#${idx + 1}</div>
+                    <div class="text">${text}</div>
+                    <div class="actions">
+                        <button class="btn btn-record" id="record-${key}" onclick="toggleRecord('${key}')">
+                            ${hasRecording ? '重新录音' : '开始录音'}
+                        </button>
+                        <button class="btn btn-replay" id="replay-${key}" onclick="playRecording('${key}')" ${!hasRecording ? 'disabled' : ''}>
+                            回放
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            updateProgress();
+        }
+
+        // 更新进度
+        function updateProgress() {
+            const langRecordings = Object.keys(recordings).filter(k => k.startsWith(currentLang + '-')).length;
+            document.getElementById('progress').value = langRecordings;
+            document.getElementById('progress').max = allTexts.length;
+            document.getElementById('progressText').textContent = `${langRecordings}/${allTexts.length}`;
+        }
+
+        // 录音控制
+        async function toggleRecord(key) {
+            if (currentRecording === key) {
+                // 停止录音
+                stopRecording();
+            } else {
+                // 开始新录音
+                if (currentRecording) {
+                    stopRecording();
+                }
+                await startRecording(key);
+            }
+        }
+
+        async function startRecording(key) {
+            try {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => t.stop());
+                }
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(mediaStream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    recordings[key] = blob;
+                    
+                    // 更新UI
+                    const btn = document.getElementById(`record-${key}`);
+                    btn.textContent = '重新录音';
+                    btn.classList.remove('recording');
+                    
+                    const replayBtn = document.getElementById(`replay-${key}`);
+                    replayBtn.disabled = false;
+                    
+                    document.getElementById(`item-${key}`).classList.add('has-recording');
+                    document.getElementById(`item-${key}`).classList.remove('current-text');
+                    
+                    currentRecording = null;
+                    updateProgress();
+                    
+                    // 释放麦克风
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(t => t.stop());
+                        mediaStream = null;
+                    }
+                };
+                
+                mediaRecorder.start();
+                currentRecording = key;
+                
+                // 更新UI
+                document.getElementById(`record-${key}`).classList.add('recording');
+                document.getElementById(`item-${key}`).classList.add('current-text');
+                
+            } catch (err) {
+                alert('请允许麦克风权限');
+                console.error(err);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        // 回放录音
+        function playRecording(key) {
+            const blob = recordings[key];
+            if (!blob) return;
+            
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.play();
+        }
+
+        // 分享所有录音
+        async function shareAll() {
+            const langRecordings = Object.entries(recordings).filter(([k]) => k.startsWith(currentLang + '-'));
+            
+            if (langRecordings.length === 0) {
+                alert('当前语言没有录音');
+                return;
+            }
+            
+            // 暂时不支持打包分享，提示用户
+            alert(`当前${currentLang}已有 ${langRecordings.length} 条录音\n\n如需导出，请告知我`);
+        }
+
+        // 保存到本地存储
+        function saveToLocal() {
+            localStorage.setItem('corpus_recordings', JSON.stringify(Object.keys(recordings)));
+            // 实际的blob无法序列化保存
+        }
+
+        // 初始化
+        initLangTabs();
+        renderTextList();
+    </script>
+</body>
+</html>
