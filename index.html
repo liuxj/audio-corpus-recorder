@@ -2,16 +2,17 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>语音录制</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; background: #f2f2f7; color: #000; }
 .header { background: #fff; padding: 60px 20px 20px; margin-bottom: 10px; border-bottom: 0.5px solid #c6c6c8; position: sticky; top: 0; z-index: 100; }
 .header h2 { margin: 0 0 16px 0; font-size: 34px; font-weight: bold; letter-spacing: -0.5px; }
-.lang-select { margin-bottom: 10px; }
-.lang-select select { width: 100%; padding: 12px 16px; font-size: 17px; background: #fff; color: #007aff; border: none; border-radius: 10px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23007aff' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.lang-select { display: flex; gap: 10px; align-items: center; }
+.lang-select select { flex: 1; padding: 12px 16px; font-size: 17px; background: #fff; color: #007aff; border: none; border-radius: 10px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23007aff' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.share-btn { padding: 12px 20px; background: #007aff; color: #fff; border: none; border-radius: 10px; font-size: 15px; white-space: nowrap; }
 .list { padding: 0 20px 100px; }
 .list-item { background: #fff; padding: 16px; display: flex; align-items: center; gap: 14px; border-bottom: 0.5px solid #c6c6c8; }
 .list-item:first-child { border-radius: 12px 12px 0 0; }
@@ -19,20 +20,32 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .list-item .idx { min-width: 28px; height: 28px; background: #007aff; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; }
 .list-item .txt { flex: 1; font-size: 17px; line-height: 1.4; }
 .list-item .btn { padding: 8px 18px; font-size: 15px; background: #007aff; color: #fff; border: none; border-radius: 20px; font-weight: 500; }
-.list-item .btn.recording { background: #ff3b30; animation: pulse 1s infinite; }
 .list-item .btn.play { background: #34c759; }
+.list-item .btn.recording { background: #ff3b30; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-.progress-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); padding: 12px 20px; border-top: 0.5px solid #c6c6c8; display: flex; gap: 12px; align-items: center; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.progress-bar progress { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: #e5e5ea; border-radius: 2px; }
-.progress-bar progress::-webkit-progress-value { background: #007aff; border-radius: 2px; }
+.progress-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); padding: 12px 20px; border-top: 0.5px solid #c6c6c8; display: flex; gap: 12px; align-items: center; backdrop-filter: blur(20px); }
+.progress-bar progress { flex: 1; height: 4px; -webkit-appearance: none; background: #e5e5ea; border-radius: 2px; }
+.progress-bar progress::-webkit-progress-value { background: #007aff; }
 .progress-bar span { font-size: 13px; color: #8e8e93; min-width: 50px; text-align: right; }
+.modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+.modal.show { display: flex; }
+.modal-content { background: #1c1c1e; border-radius: 20px; padding: 25px; width: 90%; max-width: 350px; color: #fff; text-align: center; }
+.modal-content h3 { margin: 0 0 20px 0; font-size: 18px; font-weight: 600; }
+.modal-content .text { font-size: 14px; color: #8e8e93; margin-bottom: 20px; padding: 10px; background: #2c2c2e; border-radius: 10px; word-break: break-all; }
+.modal-content .countdown { font-size: 72px; font-weight: bold; margin: 20px 0; }
+.modal-content .indicator { width: 80px; height: 80px; border-radius: 50%; background: #ff3b30; margin: 30px auto; display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite; }
+.modal-content button { padding: 12px 40px; background: #007aff; border: none; border-radius: 25px; color: #fff; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; }
+.modal-content button.secondary { background: #3a3a3c; }
+.modal-content button.danger { background: #ff3b30; }
+.progress-bar-wrap { margin: 20px 0; }
+.progress-bar-wrap progress { width: 100%; height: 4px; }
 </style>
 </head>
 <body>
 <div class="header">
     <h2>语音录制</h2>
-    <div class="lang-select" style="display:flex;gap:10px;align-items:center;">
-        <select id="langSelect" onchange="changeLang(this.value)" style="flex:1;">
+    <div class="lang-select">
+        <select id="langSelect" onchange="changeLang(this.value)">
             <option value="Chinese">中文</option>
             <option value="English">English</option>
             <option value="French">Francais</option>
@@ -42,64 +55,75 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
             <option value="Portugal">Portugues</option>
             <option value="SaudiArabic">Arabic</option>
         </select>
-        <button id="shareBtn" onclick="shareAllRecordings()" style="padding:12px 20px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:15px;white-space:nowrap;">分享</button>
+        <button class="share-btn" onclick="shareAllRecordings()">分享</button>
     </div>
 </div>
 <div class="list" id="list"></div>
 <div class="progress-bar"><progress id="prog" value="0"></progress><span id="ptxt">0/100</span></div>
 
-<div id="recModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:#1c1c1e;border-radius:20px;padding:25px;width:90%;max-width:350px;color:#fff;text-align:center;">
-        <div style="font-size:18px;font-weight:600;margin-bottom:20px;">录音中</div>
-        <div id="recTitle" style="font-size:14px;margin-bottom:20px;padding:10px;background:#2c2c2e;border-radius:10px;word-break:break-all;"></div>
-        <div id="countdown" style="font-size:72px;font-weight:bold;color:#fff;margin:20px 0;display:none;">3</div>
-        <div style="margin:30px 0;">
-            <div id="recIndicator" style="width:80px;height:80px;border-radius:50%;background:#ff3b30;margin:0 auto;display:flex;align-items:center;justify-content:center;animation:pulse 1s infinite;">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
-            </div>
+<!-- Recording Modal -->
+<div id="recModal" class="modal">
+    <div class="modal-content">
+        <h3>录音中</h3>
+        <div id="recText" class="text"></div>
+        <div id="countdown" class="countdown" style="display:none;"></div>
+        <div id="recIndicator" class="indicator">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
         </div>
-        <button onclick="stopRecordingModal()" style="padding:12px 40px;background:#ff3b30;border:none;border-radius:25px;color:#fff;font-size:16px;cursor:pointer;">停止录音</button>
+        <button class="danger" onclick="stopRecordingModal()">停止录音</button>
     </div>
 </div>
 
-<div id="playerModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:#1c1c1e;border-radius:20px;padding:25px;width:90%;max-width:350px;color:#fff;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <span style="font-size:18px;font-weight:600;">音频播放</span>
-            <button onclick="closePlayer()" style="background:none;border:none;color:#8e8e93;font-size:24px;cursor:pointer;">×</button>
+<!-- Player Modal -->
+<div id="playerModal" class="modal">
+    <div class="modal-content">
+        <h3>音频播放</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span></span>
+            <button onclick="closePlayer()" style="background:none;border:none;color:#8e8e93;font-size:24px;cursor:pointer;padding:0;">×</button>
         </div>
-        <div id="playerTitle" style="font-size:16px;margin-bottom:20px;padding:10px;background:#2c2c2e;border-radius:10px;text-align:center;"></div>
-        <div style="margin-bottom:10px;">
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#8e8e93;">
+        <div id="playerTitle" class="text"></div>
+        <div class="progress-bar-wrap">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#8e8e93;margin-bottom:5px;">
                 <span id="currTime">0:00</span>
                 <span id="totalTime">0:00</span>
             </div>
-            <input type="range" id="progressBar" value="0" min="0" max="100" style="width:100%;height:6px;-webkit-appearance:none;background:#3a3a3c;border-radius:3px;">
+            <progress id="playerProgress" value="0" style="width:100%;"></progress>
         </div>
         <div style="display:flex;justify-content:center;align-items:center;gap:30px;margin:20px 0;">
-            <button onclick="closePlayer()" style="background:none;border:none;color:#8e8e93;font-size:14px;">关闭</button>
-            <button id="playPauseBtn" onclick="togglePlayPause()" style="width:60px;height:60px;border-radius:50%;background:#007aff;border:none;color:#fff;font-size:24px;cursor:pointer;">▶</button>
-            <button onclick="deleteRec()" style="background:none;border:none;color:#ff3b30;font-size:14px;">删除</button>
+            <button class="secondary" onclick="closePlayer()">关闭</button>
+            <button id="playPauseBtn" onclick="togglePlayPause()" style="width:60px;height:60px;border-radius:50%;padding:0;">▶</button>
+            <button class="danger" onclick="deleteRec()">删除</button>
         </div>
     </div>
     <audio id="playerAudio" style="display:none;"></audio>
 </div>
 
-<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:1001;align-items:center;justify-content:center;">
-    <div style="background:#1c1c1e;border-radius:20px;padding:25px;width:90%;max-width:350px;color:#fff;text-align:center;">
-        <div style="font-size:18px;font-weight:600;margin-bottom:15px;">确认删除</div>
-        <div style="font-size:14px;color:#8e8e93;margin-bottom:25px;">确定要删除这条录音吗？</div>
-        <div style="display:flex;gap:15px;justify-content:center;">
-            <button onclick="closeDeleteModal()" style="flex:1;padding:12px;background:#3a3a3c;border:none;border-radius:10px;color:#fff;font-size:16px;cursor:pointer;">取消</button>
-            <button onclick="confirmDelete()" style="flex:1;padding:12px;background:#ff3b30;border:none;border-radius:10px;color:#fff;font-size:16px;cursor:pointer;">删除</button>
+<!-- Share Modal -->
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <h3>分享录音</h3>
+        <div id="shareStatus" class="text">准备中...</div>
+        <div id="shareProgressWrap" style="display:none;margin:20px 0;">
+            <progress id="shareProgress" value="0" style="width:100%;"></progress>
+        </div>
+        <button id="shareActionBtn" onclick="doShare()">开始分享</button>
+        <button class="secondary" onclick="closeShareModal()">取消</button>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h3>确认删除</h3>
+        <div class="text">确定要删除这条录音吗？</div>
+        <div style="display:flex;gap:15px;">
+            <button class="secondary" onclick="closeDeleteModal()">取消</button>
+            <button class="danger" onclick="confirmDelete()">删除</button>
         </div>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 var texts = [{"Chinese": "暫停播放Spotify", "English": "Pause Spotify playback.", "French": "Mettre Spotify en pause.", "German": "Spotify pausieren.", "Italian": "Metti in pausa Spotify.", "Spain": "Pausar Spotify.", "Portugal": "Pausar Spotify.", "Arabic": "إيقاف سبوتيفاي مؤقتاً"}, {"Chinese": "從第一分鐘開始播放", "English": "Play from the beginning.", "French": "Reprendre au début.", "German": "Von vorne abspielen.", "Italian": "Riproduci dall'inizio.", "Spain": "Reproducir desde el principio.", "Portugal": "Reproduzir do início.", "Arabic": "تشغيل من البداية"}, {"Chinese": "快進30秒", "English": "Fast forward 30 seconds.", "French": "Avancer de 30 secondes.", "German": "30 Sekunden vorspulen.", "Italian": "Avanti di 30 secondi.", "Spain": "Adelantar 30 segundos.", "Portugal": "Avançar 30 segundos.", "Arabic": "تقديم 30 ثانية"}, {"Chinese": "切換為單曲循環", "English": "Switch to single track repeat.", "French": "Répéter ce morceau.", "German": "Titel wiederholen.", "Italian": "Ripeti questo brano.", "Spain": "Repetir esta canción.", "Portugal": "Repetir esta música.", "Arabic": "تكرار الأغنية"}, {"Chinese": "打開FM列表", "English": "Open the FM radio list.", "French": "Ouvrir la liste FM.", "German": "FM-Liste öffnen.", "Italian": "Apri elenco FM.", "Spain": "Abrir lista FM.", "Portugal": "Abrir lista FM.", "Arabic": "فتح قائمة FM"}, {"Chinese": "幫我收藏這首歌", "English": "Add this song to my favorites.", "French": "Ajouter aux favoris.", "German": "Zu Favoriten hinzufügen.", "Italian": "Aggiungi ai preferiti.", "Spain": "Añadir a favoritos.", "Portugal": "Adicionar aos favoritos.", "Arabic": "أضف إلى المفضلة"}, {"Chinese": "播放Apple Music的歷史記錄", "English": "Play Apple Music history.", "French": "Historique Apple Music.", "German": "Apple Music Verlauf.", "Italian": "Cronologia Apple Music.", "Spain": "Historial Apple Music.", "Portugal": "Histórico Apple Music.", "Arabic": "سجل أبل ميوزك"}, {"Chinese": "下一首播放稻香", "English": "Play \"Rice Aroma\" next.", "French": "Jouer \"Rice Aroma\".", "German": "\"Rice Aroma\" spielen.", "Italian": "Riproduci \"Rice Aroma\".", "Spain": "Pon \"Rice Aroma\".", "Portugal": "Tocar \"Rice Aroma\".", "Arabic": "تشغيل \"عطر الأرز\""}, {"Chinese": "高清播放", "English": "Play in high definition.", "French": "Lecture HD.", "German": "HD-Wiedergabe.", "Italian": "Riproduzione HD.", "Spain": "Reproducción HD.", "Portugal": "Reprodução HD.", "Arabic": "تشغيل عالي الدقة"}, {"Chinese": "2倍速播放", "English": "Play at 2x speed.", "French": "Vitesse 2x.", "German": "Doppelte Geschwindigkeit.", "Italian": "Velocità 2x.", "Spain": "Velocidad 2x.", "Portugal": "Velocidade 2x.", "Arabic": "سرعة مضاعفة"}, {"Chinese": "我打8分", "English": "I give it 8 points.", "French": "Je donne 8 points.", "German": "Ich gebe 8 Punkte.", "Italian": "Voto 8.", "Spain": "Le doy 8 puntos.", "Portugal": "Dou 8 pontos.", "Arabic": "تقييمي 8 نقاط"}, {"Chinese": "我想聽AM", "English": "I want to listen to AM radio.", "French": "Écouter la radio AM.", "German": "AM Radio hören.", "Italian": "Ascolta radio AM.", "Spain": "Escuchar radio AM.", "Portugal": "Ouvir rádio AM.", "Arabic": "استماع لراديو AM"}, {"Chinese": "我想聽 Bruno Mars 的歌", "English": "I want to listen to Bruno Mars.", "French": "Écouter Bruno Mars.", "German": "Bruno Mars hören.", "Italian": "Ascolta Bruno Mars.", "Spain": "Escuchar Bruno Mars.", "Portugal": "Ouvir Bruno Mars.", "Arabic": "استماع لبرونو مارس"}, {"Chinese": "幫我播放 Friends", "English": "Play \"Friends\" for me.", "French": "Jouer \"Friends\".", "German": "\"Friends\" abspielen.", "Italian": "Riproduci \"Friends\".", "Spain": "Reproducir \"Friends\".", "Portugal": "Reproduzir \"Friends\".", "Arabic": "تشغيل \"فريندز\""}, {"Chinese": "我想看成龍主演的電影", "English": "I want to watch a movie starring Jackie Chan.", "French": "Film de Jackie Chan.", "German": "Jackie Chan Filme.", "Italian": "Film di Jackie Chan.", "Spain": "Película de Jackie Chan.", "Portugal": "Filme do Jackie Chan.", "Arabic": "فيلم لجاكي شان"}, {"Chinese": "這首歌叫什麼名字", "English": "What is the name of this song?", "French": "C'est quoi ce titre ?", "German": "Wie heißt dieses Lied?", "Italian": "Che canzone è questa?", "Spain": "¿Cómo se llama esta canción?", "Portugal": "Que música é esta?", "Arabic": "ما اسم هذه الأغنية؟"}, {"Chinese": "打開懸浮歌詞", "English": "Open floating lyrics.", "French": "Paroles flottantes.", "German": "Floating Lyrics öffnen.", "Italian": "Testi fluttuanti.", "Spain": "Letras flotantes.", "Portugal": "Letras flutuantes.", "Arabic": "كلمات الأغنية العائمة"}, {"Chinese": "切換為藍牙音樂", "English": "Switch to Bluetooth audio.", "French": "Audio Bluetooth.", "German": "Bluetooth Audio.", "Italian": "Audio Bluetooth.", "Spain": "Audio Bluetooth.", "Portugal": "Áudio Bluetooth.", "Arabic": "بلوتوث أوديو"}, {"Chinese": "我不喜歡這首歌", "English": "I don't like this song.", "French": "Je n'aime pas ça.", "German": "Gefällt mir nicht.", "Italian": "Non mi piace.", "Spain": "No me gusta.", "Portugal": "Não gosto disto.", "Arabic": "لا يعجبني"}, {"Chinese": "播放抖音熱歌榜", "English": "Play the TikTok hot hits chart.", "French": "Tops Douyin.", "German": "Douyin Charts.", "Italian": "Classifica Douyin.", "Spain": "Lista de Douyin.", "Portugal": "Top Douyin.", "Arabic": "أغاني دوين الشهيرة"}, {"Chinese": "導航到哈佛大學", "English": "Navigate to Harvard University.", "French": "Vers Harvard.", "German": "Zu Harvard University.", "Italian": "Verso Harvard.", "Spain": "A Harvard.", "Portugal": "Para Harvard.", "Arabic": "إلى جامعة هارفارد"}, {"Chinese": "導航到世界之窗走不堵車最快的路線", "English": "Navigate to Window of the World via the fastest route.", "French": "Route la plus rapide.", "German": "Schnellste Route.", "Italian": "Percorso più veloce.", "Spain": "Ruta más rápida.", "Portugal": "Rota mais rápida.", "Arabic": "أسرع طريق"}, {"Chinese": "導航到最近的加油站", "English": "Navigate to the nearest gas station.", "French": "Station la plus proche.", "German": "Nächste Tankstelle.", "Italian": "Distributore vicino.", "Spain": "Gasolinera cercana.", "Portugal": "Posto mais próximo.", "Arabic": "أقرب محطة وقود"}, {"Chinese": "幫我找找附近人均200元左右的自助餐店", "English": "Find a buffet nearby around 200 yuan per person.", "French": "Buffet à 200 yuan.", "German": "Buffet für 200 Yuan.", "Italian": "Buffet da 200 yuan.", "Spain": "Buffet de 200 yuanes.", "Portugal": "Buffet de 200 yuans.", "Arabic": "بوفيه بـ 200 يوان"}, {"Chinese": "我想去可以帶寵物的餐廳", "English": "I want to go to a pet-friendly restaurant.", "French": "Resto animaux admis.", "German": "Tierfreundliche Restos.", "Italian": "Ristorante per animali.", "Spain": "Restaurante mascotas.", "Portugal": "Restaurante pet-friendly.", "Arabic": "مطعم يسمح بالحيوانات"}, {"Chinese": "附近有哪些5A級景區", "English": "What 5A-level scenic spots are nearby?", "French": "Sites 5A proches.", "German": "5A Sehenswürdigkeiten.", "Italian": "Attrazioni 5A vicine.", "Spain": "Sitios 5A cercanos.", "Portugal": "Atrações 5A próximas.", "Arabic": "مناطق سياحية 5A"}, {"Chinese": "幫我看看醫院附近有哪些餐廳", "English": "Check for restaurants near the hospital.", "French": "Restos près hôpital.", "German": "Restos am Krankenhaus.", "Italian": "Ristoranti vicini.", "Spain": "Restos cerca hospital.", "Portugal": "Restos perto hospital.", "Arabic": "مطاعم قرب المستشفى"}, {"Chinese": "搜一下評論最多的電影院", "English": "Search for the cinema with the most reviews.", "French": "Ciné le mieux noté.", "German": "Beliebtestes Kino.", "Italian": "Cinema più votato.", "Spain": "Cine mejor valorado.", "Portugal": "Cinema mais votado.", "Arabic": "السينما الأكثر تقييماً"}, {"Chinese": "幫我找找附近評分最高的酒吧", "English": "Find the highest-rated bar nearby.", "French": "Bar le mieux noté.", "German": "Beste Bar in der Nähe.", "Italian": "Miglior bar vicino.", "Spain": "Mejor bar cercano.", "Portugal": "Melhor bar próximo.", "Arabic": "أفضل بار قريب"}, {"Chinese": "搜一下附近有空位的充電樁", "English": "Search for available charging stations nearby.", "French": "Bornes disponibles.", "German": "Freie Ladesäulen.", "Italian": "Ricarica disponibile.", "Spain": "Cargador disponible.", "Portugal": "Carregador disponível.", "Arabic": "شاحن متاح"}, {"Chinese": "找一下五星級酒店", "English": "Look for five-star hotels.", "French": "Hôtel 5 étoiles.", "German": "5-Sterne-Hotel.", "Italian": "Hotel a 5 stelle.", "Spain": "Hotel 5 estrellas.", "Portugal": "Hotel 5 estrelas.", "Arabic": "فندق 5 نجوم"}, {"Chinese": "我要先去世界之窗再去深圳北最後去百度國際大廈", "English": "Go to Window of the World, then Shenzhen North, then Baidu Building.", "French": "Itinéraire multiple.", "German": "Mehrere Stopps.", "Italian": "Tappe multiple.", "Spain": "Ruta con paradas.", "Portugal": "Rota com paradas.", "Arabic": "مسار متعدد الوجهات"}, {"Chinese": "沿途有沒有加油站", "English": "Are there any gas stations along the route?", "French": "Station sur la route ?", "German": "Tankstelle am Weg?", "Italian": "Distributore sul percorso?", "Spain": "¿Gasolinera en ruta?", "Portugal": "Posto no caminho?", "Arabic": "محطة على الطريق؟"}, {"Chinese": "我現在在哪裡", "English": "Where am I now?", "French": "Où suis-je ?", "German": "Wo bin ich?", "Italian": "Dove sono?", "Spain": "¿Dónde estoy?", "Portugal": "Onde estou?", "Arabic": "أين أنا؟"}, {"Chinese": "前面堵不堵車", "English": "Is there traffic ahead?", "French": "Trafic devant ?", "German": "Stau voraus?", "Italian": "Traffico avanti?", "Spain": "¿Tráfico adelante?", "Portugal": "Trânsito à frente?", "Arabic": "زحمة قدام؟"}, {"Chinese": "開始導航", "English": "Start navigation.", "French": "Lancer navigation.", "German": "Navigation starten.", "Italian": "Avvia navigazione.", "Spain": "Iniciar navegación.", "Portugal": "Iniciar navegação.", "Arabic": "ابدأ الملاحة"}, {"Chinese": "打開巡航模式", "English": "Turn on cruise mode.", "French": "Mode croisière.", "German": "Tempomat aktivieren.", "Italian": "Cruise control.", "Spain": "Control de crucero.", "Portugal": "Piloto automático.", "Arabic": "مثبت السرعة"}, {"Chinese": "刷新路線", "English": "Refresh the route.", "French": "Actualiser trajet.", "German": "Route aktualisieren.", "Italian": "Aggiorna percorso.", "Spain": "Actualizar ruta.", "Portugal": "Atualizar rota.", "Arabic": "تحديث المسار"}, {"Chinese": "切換到紅綠燈少的路線", "English": "Switch to a route with fewer traffic lights.", "French": "Éviter les feux.", "German": "Weniger Ampeln.", "Italian": "Meno semafori.", "Spain": "Menos semáforos.", "Portugal": "Menos semáforos.", "Arabic": "إشارات أقل"}, {"Chinese": "把世界之窗添加到途經點", "English": "Add Window of the World as a waypoint.", "French": "Ajouter étape.", "German": "Wegpunkt hinzufügen.", "Italian": "Aggiungi tappa.", "Spain": "Añadir parada.", "Portugal": "Adicionar parada.", "Arabic": "إضافة نقطة توقف"}, {"Chinese": "刪除第一個途經點", "English": "Delete the first waypoint.", "French": "Supprimer étape.", "German": "Wegpunkt löschen.", "Italian": "Rimuovi tappa.", "Spain": "Eliminar parada.", "Portugal": "Remover parada.", "Arabic": "حذف نقطة توقف"}, {"Chinese": "幫我把導航播報的聲音切換為女聲", "English": "Switch the navigation voice to female.", "French": "Voix féminine.", "German": "Weibliche Stimme.", "Italian": "Voce femminile.", "Spain": "Voz femenina.", "Portugal": "Voz feminina.", "Arabic": "صوت أنثوي"}, {"Chinese": "回家", "English": "Go home.", "French": "Rentrer à la maison.", "German": "Nach Hause fahren.", "Italian": "Vai a casa.", "Spain": "Ir a casa.", "Portugal": "Ir para casa.", "Arabic": "العودة للمنزل"}, {"Chinese": "幫我打開日程提醒", "English": "Turn on schedule reminders.", "French": "Rappels calendrier.", "German": "Kalender-Erinnerung.", "Italian": "Promemoria agenda.", "Spain": "Recordatorios.", "Portugal": "Lembretes.", "Arabic": "تذكير المواعيد"}, {"Chinese": "切換成女性形象", "English": "Switch to the female avatar.", "French": "Avatar féminin.", "German": "Weiblicher Avatar.", "Italian": "Avatar femminile.", "Spain": "Avatar femenino.", "Portugal": "Avatar feminino.", "Arabic": "صورة أنثوية"}, {"Chinese": "靜音", "English": "Mute.", "French": "Couper le son.", "German": "Stummschalten.", "Italian": "Muto.", "Spain": "Silenciar.", "Portugal": "Mudo.", "Arabic": "كتم الصوت"}, {"Chinese": "幫我打開藍牙", "English": "Turn on Bluetooth.", "French": "Activer Bluetooth.", "German": "Bluetooth an.", "Italian": "Attiva Bluetooth.", "Spain": "Activar Bluetooth.", "Portugal": "Ligar Bluetooth.", "Arabic": "تشغيل البلوتوث"}, {"Chinese": "螢幕調亮一點", "English": "Increase the screen brightness.", "French": "Écran plus clair.", "German": "Bildschirm heller.", "Italian": "Schermo più luminoso.", "Spain": "Más brillo.", "Portugal": "Tela mais brilhante.", "Arabic": "زيادة سطوع الشاشة"}, {"Chinese": "幫我把晝夜模式切換成自動", "English": "Switch day-night mode to automatic.", "French": "Mode auto jour/nuit.", "German": "Tag/Nacht Automatik.", "Italian": "Giorno/Notte auto.", "Spain": "Modo noche auto.", "Portugal": "Modo noite auto.", "Arabic": "وضع النهار والليل تلقائي"}, {"Chinese": "把螢幕字體變大一些", "English": "Increase the font size.", "French": "Police plus grande.", "German": "Schrift vergrößern.", "Italian": "Carattere più grande.", "Spain": "Letra más grande.", "Portugal": "Letra maior.", "Arabic": "تكبير الخط"}, {"Chinese": "打開360環視", "English": "Open 360-degree camera.", "French": "Vue 360.", "German": "360 Grad Kamera.", "Italian": "Visuale 360.", "Spain": "Vista 360.", "Portugal": "Vista 360.", "Arabic": "عرض 360 درجة"}, {"Chinese": "關閉投屏", "English": "Turn off screen mirroring.", "French": "Arrêter projection.", "German": "Mirroring beenden.", "Italian": "Stop proiezione.", "Spain": "Parar proyección.", "Portugal": "Parar espelhamento.", "Arabic": "إيقاف عرض الشاشة"}, {"Chinese": "螢幕切換到二排屏投屏", "English": "Switch to second-row screen mirroring.", "French": "Écran arrière.", "German": "Rücksitz-Display.", "Italian": "Schermo posteriore.", "Spain": "Pantalla trasera.", "Portugal": "Tela traseira.", "Arabic": "الشاشة الخلفية"}, {"Chinese": "切換壁紙", "English": "Change wallpaper.", "French": "Changer fond d'écran.", "German": "Hintergrund ändern.", "Italian": "Cambia sfondo.", "Spain": "Cambiar fondo.", "Portugal": "Mudar fundo.", "Arabic": "تغيير الخلفية"}, {"Chinese": "幫我打開兒童座椅界面", "English": "Open the child seat interface.", "French": "Siège enfant.", "German": "Kindersitz-Menü.", "Italian": "Menu seggiolino.", "Spain": "Asiento infantil.", "Portugal": "Assento infantil.", "Arabic": "مقعد الأطفال"}, {"Chinese": "停止語音播報", "English": "Stop voice broadcast.", "French": "Arrêter la voix.", "German": "Sprachausgabe stopp.", "Italian": "Stop voce.", "Spain": "Detener voz.", "Portugal": "Parar voz.", "Arabic": "إيقاف الصوت"}, {"Chinese": "聲音大一點", "English": "Volume up.", "French": "Plus fort.", "German": "Lauter.", "Italian": "Più forte.", "Spain": "Más alto.", "Portugal": "Mais alto.", "Arabic": "أعلى"}, {"Chinese": "把導航音量調到最大", "English": "Set navigation volume to maximum.", "French": "Volume nav max.", "German": "Navigationslautstärke max.", "Italian": "Volume nav max.", "Spain": "Volumen nav máx.", "Portugal": "Volume nav máx.", "Arabic": "صوت الملاحة أقصى شيء"}, {"Chinese": "幫我打開空調", "English": "Turn on the air conditioner.", "French": "Allumer clim.", "German": "Klimaanlage an.", "Italian": "Accendi clima.", "Spain": "Aire condicionado.", "Portugal": "Ligar ar-condicionado.", "Arabic": "تشغيل المكيف"}, {"Chinese": "打開內循環", "English": "Turn on air recirculation.", "French": "Recirculation air.", "German": "Umluft an.", "Italian": "Ricircolo aria.", "Spain": "Recirculación.", "Portugal": "Recirculação.", "Arabic": "تدوير الهواء"}, {"Chinese": "打開前除霜", "English": "Turn on front defrost.", "French": "Dégivrage avant.", "German": "Enteiser vorne.", "Italian": "Sbrinamento ant.", "Spain": "Desescarchar del.", "Portugal": "Desembaçador diant.", "Arabic": "إزالة الجليد الأمامي"}, {"Chinese": "把空調溫度調低一點", "English": "Lower the AC temperature.", "French": "Température plus basse.", "German": "Temperatur senken.", "Italian": "Abbassa temp.", "Spain": "Bajar temperatura.", "Portugal": "Baixar temperatura.", "Arabic": "خفض الحرارة"}, {"Chinese": "把空調 風量調小一檔", "English": "Decrease the AC fan speed by one level.", "French": "Ventilo moins fort.", "German": "Gebläse schwächer.", "Italian": "Ventola meno.", "Spain": "Menos ventilación.", "Portugal": "Ventilação menor.", "Arabic": "تقليل المروحة"}, {"Chinese": "打開座椅按摩", "English": "Turn on seat massage.", "French": "Massage siège.", "German": "Sitzmassage an.", "Italian": "Massaggio sedile.", "Spain": "Masaje de asiento.", "Portugal": "Massagem no banco.", "Arabic": "تدليك المقعد"}, {"Chinese": "把座椅加熱調高一檔", "English": "Increase seat heating by one level.", "French": "Chauffage siège +.", "German": "Sitzheizung höher.", "Italian": "Riscaldamento sedile +.", "Spain": "Calor asiento +.", "Portugal": "Aquecer banco +.", "Arabic": "زيادة تدفئة المقعد"}, {"Chinese": "把座椅加熱設置成10分鐘後關掉", "English": "Set seat heater to turn off in 10 minutes.", "French": "Timer chauffage.", "German": "Sitzheizung Timer.", "Italian": "Timer riscaldamento.", "Spain": "Temporizador calor.", "Portugal": "Timer aquecimento.", "Arabic": "مؤقت تدفئة المقعد"}, {"Chinese": "把我的座椅往前面調一點", "English": "Move my seat forward a bit.", "French": "Siège vers l'avant.", "German": "Sitz vorfahren.", "Italian": "Sedile avanti.", "Spain": "Asiento adelante.", "Portugal": "Banco para frente.", "Arabic": "تقديم المقعد"}, {"Chinese": "記住我當前的座椅位置", "English": "Save my current seat position.", "French": "Mémoriser position.", "German": "Sitzpos. speichern.", "Italian": "Memorizza pos.", "Spain": "Guardar posición.", "Portugal": "Salvar posição.", "Arabic": "حفظ وضعية المقعد"}, {"Chinese": "幫我打開車窗", "English": "Open the windows.", "French": "Ouvrir fenêtre.", "German": "Fenster öffnen.", "Italian": "Apri finestrino.", "Spain": "Abrir ventanilla.", "Portugal": "Abrir janela.", "Arabic": "فتح النافذة"}, {"Chinese": "把車窗開大一些", "English": "Roll the windows down further.", "French": "Baisser fenêtre +.", "German": "Fenster weiter runter.", "Italian": "Abbassa finestrino +.", "Spain": "Bajar ventanilla +.", "Portugal": "Baixar janela +.", "Arabic": "تنزيل النافذة أكثر"}, {"Chinese": "把天窗調到最大", "English": "Fully open the sunroof.", "French": "Toit ouvrant max.", "German": "Schiebedach ganz auf.", "Italian": "Tetto apribile max.", "Spain": "Techo solar máx.", "Portugal": "Teto solar máx.", "Arabic": "فتحة السقف كاملة"}, {"Chinese": "打開遮陽簾", "English": "Open the sunshade.", "French": "Ouvrir pare-soleil.", "German": "Sonnenblende auf.", "Italian": "Apri tendina.", "Spain": "Abrir parasol.", "Portugal": "Abrir cortina.", "Arabic": "فتح المظلة"}, {"Chinese": "打開後備箱", "English": "Open the trunk.", "French": "Ouvrir coffre.", "German": "Kofferraum öffnen.", "Italian": "Apri bagagliaio.", "Spain": "Abrir maletero.", "Portugal": "Abrir porta-malas.", "Arabic": "فتح الشنطة"}, {"Chinese": "切換氛圍燈顏色", "English": "Change the ambient light color.", "French": "Couleur ambiance.", "German": "Ambientlicht Farbe.", "Italian": "Colore ambiente.", "Spain": "Color ambiental.", "Portugal": "Cor ambiente.", "Arabic": "لون الإضاءة"}, {"Chinese": "把氛圍燈的亮度調暗一點", "English": "Dim the ambient light.", "French": "Lumière plus tamisée.", "German": "Licht dimmen.", "Italian": "Dimmer luci.", "Spain": "Atenuar luces.", "Portugal": "Diminuir luz.", "Arabic": "تعتيم الإضاءة"}, {"Chinese": "打開後視鏡加熱", "English": "Turn on rearview mirror heating.", "French": "Chauffage rétro.", "German": "Spiegelheizung.", "Italian": "Specchietti termici.", "Spain": "Retrovisor térmico.", "Portugal": "Espelho térmico.", "Arabic": "تسخين المرايا"}, {"Chinese": "關閉方向盤自動加熱", "English": "Turn off automatic steering wheel heating.", "French": "Chauffage volant off.", "German": "Lenkradheizung aus.", "Italian": "Riscaldamento volante off.", "Spain": "Volante térmico off.", "Portugal": "Aquecer volante off.", "Arabic": "إطفاء تدفئة المقود"}, {"Chinese": "打開後排兒童鎖", "English": "Enable rear child safety locks.", "French": "Verrou enfant.", "German": "Kindersicherung.", "Italian": "Sicura bambini.", "Spain": "Seguro niños.", "Portugal": "Trava infantil.", "Arabic": "قفل الأطفال"}, {"Chinese": "打開超級節能模式", "English": "Turn on super energy-saving mode.", "French": "Mode éco.", "German": "Energiesparmodus.", "Italian": "Modalità eco.", "Spain": "Modo ahorro.", "Portugal": "Modo econômico.", "Arabic": "وضع توفير الطاقة"}, {"Chinese": "打開油箱蓋", "English": "Open the fuel filler cap.", "French": "Trappe essence.", "German": "Tankklappe öffnen.", "Italian": "Tappo serbatoio.", "Spain": "Tapa gasolina.", "Portugal": "Tampa combustível.", "Arabic": "غطاء البنزين"}, {"Chinese": "檢查5G網路狀態", "English": "Check 5G network status.", "French": "État 5G.", "German": "5G Status.", "Italian": "Stato 5G.", "Spain": "Estado 5G.", "Portugal": "Status 5G.", "Arabic": "حالة الـ 5G"}, {"Chinese": "切換到車載Wi-Fi熱點", "English": "Switch to in-car Wi-Fi hotspot.", "French": "Hotspot Wi-Fi.", "German": "Wi-Fi Hotspot.", "Italian": "Hotspot Wi-Fi.", "Spain": "Punto Wi-Fi.", "Portugal": "Hotspot Wi-Fi.", "Arabic": "نقطة اتصال واي فاي"}, {"Chinese": "檢查系統更新", "English": "Check for system updates.", "French": "Mise à jour.", "German": "Systemupdate.", "Italian": "Aggiornamento.", "Spain": "Actualizar sistema.", "Portugal": "Atualizar sistema.", "Arabic": "تحديث النظام"}, {"Chinese": "開啟自動換氣模式", "English": "Turn on automatic ventilation.", "French": "Ventilation auto.", "German": "Auto-Lüftung.", "Italian": "Ventilazione auto.", "Spain": "Ventilación auto.", "Portugal": "Ventilação auto.", "Arabic": "تهوية تلقائية"}, {"Chinese": "避開收費路段", "English": "Avoid toll roads.", "French": "Éviter péages.", "German": "Maut vermeiden.", "Italian": "Evita pedaggi.", "Spain": "Evitar peajes.", "Portugal": "Evitar pedágios.", "Arabic": "تجنب الرسوم"}, {"Chinese": "顯示最近的充電樁", "English": "Show nearest charging stations.", "French": "Bornes proches.", "German": "Ladesäulen finden.", "Italian": "Ricarica vicina.", "Spain": "Cargadores cerca.", "Portugal": "Carregadores perto.", "Arabic": "شواحن قريبة"}, {"Chinese": "目前胎壓正常嗎", "English": "Is the tire pressure normal?", "French": "Pression pneus.", "German": "Reifendruck ok?", "Italian": "Pressione gomme?", "Spain": "Presión neumáticos?", "Portugal": "Pressão pneus?", "Arabic": "ضغط الإطارات"}, {"Chinese": "檢查剩餘油量", "English": "Check the remaining fuel level.", "French": "Niveau carburant.", "German": "Kraftstoffstand.", "Italian": "Livello carburante.", "Spain": "Nivel combustible.", "Portugal": "Nível combustível.", "Arabic": "مستوى الوقود"}, {"Chinese": "調高低音效果", "English": "Increase the bass.", "French": "Plus de basses.", "German": "Mehr Bass.", "Italian": "Più bassi.", "Spain": "Más bajos.", "Portugal": "Mais graves.", "Arabic": "زيادة البيس"}, {"Chinese": "收起後視鏡", "English": "Fold the rearview mirrors.", "French": "Rabattre rétros.", "German": "Spiegel anklappen.", "Italian": "Chiudi specchietti.", "Spain": "Plegar espejos.", "Portugal": "Dobrar espelhos.", "Arabic": "طي المرايا"}, {"Chinese": "開啟洗車模式", "English": "Turn on car wash mode.", "French": "Mode lavage.", "German": "Waschstraßenmodus.", "Italian": "Modo lavaggio.", "Spain": "Modo lavado.", "Portugal": "Modo lavagem.", "Arabic": "وضع غسيل السيارة"}, {"Chinese": "撥打最後一通來電", "English": "Redial the last call.", "French": "Rappeler dernier.", "German": "Letzter Anruf.", "Italian": "Richiama ultimo.", "Spain": "Llamar último.", "Portugal": "Ligar último.", "Arabic": "اتصال بآخر رقم"}, {"Chinese": "接聽電話", "English": "Answer the call.", "French": "Répondre.", "German": "Annehmen.", "Italian": "Rispondi.", "Spain": "Responder.", "Portugal": "Responder.", "Arabic": "الرد"}, {"Chinese": "掛斷電話", "English": "Hang up the call.", "French": "Raccrocher.", "German": "Auflegen.", "Italian": "Chiudi.", "Spain": "Colgar.", "Portugal": "Desligar.", "Arabic": "إنهاء المكالمة"}, {"Chinese": "當前VoNR訊號如何", "English": "How is the VoNR signal?", "French": "Signal VoNR.", "German": "VoNR Signal.", "Italian": "Segnale VoNR.", "Spain": "Señal VoNR.", "Portugal": "Sinal VoNR.", "Arabic": "إشارة VoNR"}, {"Chinese": "開啟行車記錄儀", "English": "Turn on the dashcam.", "French": "Dashcam on.", "German": "Dashcam an.", "Italian": "Dashcam on.", "Spain": "Dashcam on.", "Portugal": "Dashcam on.", "Arabic": "تشغيل الكاميرا"}, {"Chinese": "開啟駕駛座通風", "English": "Turn on driver seat ventilation.", "French": "Ventilation siège.", "German": "Sitzbelüftung.", "Italian": "Ventilazione sedile.", "Spain": "Ventilar asiento.", "Portugal": "Ventilar banco.", "Arabic": "تهوية المقعد"}, {"Chinese": "今天天氣如何", "English": "How is the weather today?", "French": "Météo jour.", "German": "Wetter heute.", "Italian": "Meteo oggi.", "Spain": "Clima hoy.", "Portugal": "Clima hoje.", "Arabic": "الطقس اليوم"}, {"Chinese": "現在幾點了", "English": "What time is it now?", "French": "Quelle heure ?", "German": "Uhrzeit?", "Italian": "Che ora è?", "Spain": "¿Qué hora es?", "Portugal": "Que horas são?", "Arabic": "كم الساعة؟"}, {"Chinese": "恢復出廠設置", "English": "Restore factory settings.", "French": "Reset usine.", "German": "Werksreset.", "Italian": "Reset fabbrica.", "Spain": "Reset de fábrica.", "Portugal": "Reset de fábrica.", "Arabic": "ضبط المصنع"}];
 var curLang = "Chinese";
@@ -109,38 +133,32 @@ var currentRecordKey = null;
 var currentKey = null;
 var mediaRecorder = null;
 var mediaStream = null;
+var shareRecordings = [];
 
 function getField(lang) {
     var map = {"Chinese":"Chinese","English":"English","French":"French","German":"German","Italian":"Italian","Spanish":"Spain","Portugal":"Portugal","SaudiArabic":"Arabic"};
     return map[lang] || "Chinese";
 }
 
-function changeLang(lang) {
-    curLang = lang;
-    render();
-}
+function changeLang(lang) { curLang = lang; render(); }
 
 function render() {
     var field = getField(curLang);
     var listContainer = document.getElementById("list");
     listContainer.innerHTML = "";
-    
     texts.forEach(function(item, idx) {
         var txt = item[field] || item["Chinese"];
         var key = curLang + "-" + idx;
         var hasRec = recs[key] !== undefined;
-        
         var div = document.createElement("div");
         div.className = "list-item";
-        div.innerHTML = "<span class=idx>#" + (idx+1) + "</span><span class=txt>" + txt + "</span>" + (hasRec ? "<button class=btn id=btn-rep-" + key + " style=\"background:#34c759\">播放</button>" : "") + "<button class=btn id=btn-" + key + ">" + (hasRec ? "重新录音" : "录音") + "</button>";
+        div.innerHTML = "<span class=idx>#" + (idx+1) + "</span><span class=txt>" + txt + "</span>" + (hasRec ? "<button class=btn play id=btn-rep-" + key + ">播放</button>" : "") + "<button class=btn id=btn-" + key + ">" + (hasRec ? "重新录音" : "录音") + "</button>";
         listContainer.appendChild(div);
-        
         document.getElementById("btn-" + key).onclick = (function(k){ return function(){ toggleRec(k); }; })(key);
         if (hasRec) {
             document.getElementById("btn-rep-" + key).onclick = (function(k){ return function(){ playRec(k); }; })(key);
         }
     });
-    
     var count = Object.keys(recs).filter(function(k){ return k.startsWith(curLang + "-"); }).length;
     document.getElementById("prog").max = texts.length;
     document.getElementById("prog").value = count;
@@ -148,111 +166,75 @@ function render() {
 }
 
 async function toggleRec(key) {
-    if (curRec === key) {
-        stopRecordingModal();
-        return;
-    }
+    if (curRec === key) { stopRecordingModal(); return; }
     if (curRec) stopRecordingModal();
     
-    if (!navigator.mediaDevices) {
-        alert("您的浏览器不支持录音功能");
-        return;
-    }
+    var lang = key.split("-")[0];
+    var idx = parseInt(key.split("-")[1]);
+    var field = getField(lang);
+    var text = texts[idx][field] || texts[idx]["Chinese"];
+    document.getElementById("recText").textContent = text;
+    document.getElementById("recModal").classList.add("show");
     
-    try {
-        var lang = key.split("-")[0];
-        var idx = parseInt(key.split("-")[1]);
-        var field = getField(lang);
-        var text = texts[idx][field] || texts[idx]["Chinese"];
-        document.getElementById("recTitle").textContent = text;
-        document.getElementById("recModal").style.display = "flex";
-        
-        // Start recording immediately, but show countdown for user
-        var countdown = 2;
-        document.getElementById("countdown").style.display = "block";
-        document.getElementById("recIndicator").style.display = "none";
-        document.getElementById("countdown").textContent = countdown;
-        
-        // Start actual recording NOW
-        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaStream = stream;
-                mediaRecorder = new MediaRecorder(stream);
-                var chunks = [];
-                
-                mediaRecorder.ondataavailable = function(e) {
-                    if (e.data.size > 0) chunks.push(e.data);
-                };
-                
-                mediaRecorder.onstop = function() {
-                    recs[key] = new Blob(chunks, { type: "audio/webm" });
-                    // Auto play the recording for user to review
-                    var blob = recs[key];
-                    var url = URL.createObjectURL(blob);
-                    var audio = document.getElementById("playerAudio");
-                    audio.src = url;
-                    
-                    // Show player modal
-                    var lang = key.split("-")[0];
-                    var idx = parseInt(key.split("-")[1]);
-                    var field = getField(lang);
-                    var text = texts[idx][field] || texts[idx]["Chinese"];
-                    document.getElementById("playerTitle").textContent = "录音回放: " + text;
-                    document.getElementById("playerModal").style.display = "flex";
-                    document.getElementById("recModal").style.display = "none";
-                    audio.play();
-                    document.getElementById("playPauseBtn").textContent = "⏸";
-                    
-                    // Update player time
-                    audio.ontimeupdate = function() {
-                        var curr = audio.currentTime;
-                        var total = audio.duration || 0;
-                        document.getElementById("currTime").textContent = formatTime(curr);
-                        document.getElementById("totalTime").textContent = formatTime(total);
-                        if (total > 0) {
-                            document.getElementById("progressBar").value = (curr / total) * 100;
-                        }
-                    };
-                    
-                    audio.onended = function() {
-                        document.getElementById("playPauseBtn").textContent = "▶";
-                    };
-                    
-                    render();
-                };
-                
-                mediaRecorder.start();
-        curRec = key;
-        currentRecordKey = key;
-        
-        // Show 2 second countdown for user to prepare speaking
-        var countInterval = setInterval(function() {
-            countdown--;
-            if (countdown > 0) {
-                document.getElementById("countdown").textContent = countdown;
-            } else {
-                clearInterval(countInterval);
-                document.getElementById("countdown").style.display = "none";
-                document.getElementById("recIndicator").style.display = "flex";
-            }
-        }, 1000);
-    } catch(err) {
-        alert("录音失败: " + err.message);
-    }
+    // Countdown 2s
+    var countdown = 2;
+    document.getElementById("countdown").style.display = "block";
+    document.getElementById("recIndicator").style.display = "none";
+    document.getElementById("countdown").textContent = countdown;
+    
+    // Start recording immediately
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaStream = stream;
+    mediaRecorder = new MediaRecorder(stream);
+    var chunks = [];
+    mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
+    mediaRecorder.onstop = function() {
+        recs[key] = new Blob(chunks, { type: "audio/webm" });
+        // Auto play after recording
+        var blob = recs[key];
+        var url = URL.createObjectURL(blob);
+        var audio = document.getElementById("playerAudio");
+        audio.src = url;
+        document.getElementById("recModal").classList.remove("show");
+        document.getElementById("playerModal").classList.add("show");
+        document.getElementById("playerTitle").textContent = "录音回放: " + text;
+        audio.play();
+        document.getElementById("playPauseBtn").textContent = "⏸";
+        audio.ontimeupdate = function() {
+            document.getElementById("currTime").textContent = formatTime(audio.currentTime);
+            document.getElementById("totalTime").textContent = formatTime(audio.duration);
+            if (audio.duration) document.getElementById("playerProgress").value = (audio.currentTime / audio.duration) * 100;
+        };
+        audio.onended = function() { document.getElementById("playPauseBtn").textContent = "▶"; };
+        render();
+    };
+    mediaRecorder.start();
+    curRec = key;
+    currentRecordKey = key;
+    
+    // Countdown display
+    var countInterval = setInterval(function() {
+        countdown--;
+        if (countdown > 0) {
+            document.getElementById("countdown").textContent = countdown;
+        } else {
+            clearInterval(countInterval);
+            document.getElementById("countdown").style.display = "none";
+            document.getElementById("recIndicator").style.display = "flex";
+        }
+    }, 1000);
 }
 
 function stopRecordingModal() {
-    // Show stopping indicator
-    document.getElementById("recIndicator").innerHTML = "<span style=\"color:#fff;font-size:16px\">等待中...</span>";
-    
-    // Wait 1 second before stopping
+    document.getElementById("recIndicator").innerHTML = "<span style=\"color:#fff;font-size:14px\">等待中...</span>";
     setTimeout(function() {
         if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
         if (mediaStream) mediaStream.getTracks().forEach(function(t){ t.stop(); });
         curRec = null;
         currentRecordKey = null;
-        document.getElementById("recModal").style.display = "none";
+        document.getElementById("recModal").classList.remove("show");
         document.getElementById("countdown").style.display = "none";
-        // Restore indicator
+        document.getElementById("recIndicator").style.display = "flex";
         document.getElementById("recIndicator").innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
         render();
     }, 1000);
@@ -261,53 +243,35 @@ function stopRecordingModal() {
 function playRec(key) {
     var blob = recs[key];
     if (!blob) return;
-    
     currentKey = key;
     var url = URL.createObjectURL(blob);
     var audio = document.getElementById("playerAudio");
     audio.src = url;
-    
     var lang = key.split("-")[0];
     var idx = parseInt(key.split("-")[1]);
     var field = getField(lang);
     var text = texts[idx][field] || texts[idx]["Chinese"];
     document.getElementById("playerTitle").textContent = text;
-    
-    document.getElementById("playerModal").style.display = "flex";
+    document.getElementById("playerModal").classList.add("show");
     audio.play();
     document.getElementById("playPauseBtn").textContent = "⏸";
-    
     audio.ontimeupdate = function() {
-        var curr = audio.currentTime;
-        var total = audio.duration || 0;
-        document.getElementById("currTime").textContent = formatTime(curr);
-        document.getElementById("totalTime").textContent = formatTime(total);
-        if (total > 0) {
-            document.getElementById("progressBar").value = (curr / total) * 100;
-        }
+        document.getElementById("currTime").textContent = formatTime(audio.currentTime);
+        document.getElementById("totalTime").textContent = formatTime(audio.duration);
+        if (audio.duration) document.getElementById("playerProgress").value = (audio.currentTime / audio.duration) * 100;
     };
-    
-    audio.onended = function() {
-        document.getElementById("playPauseBtn").textContent = "▶";
-    };
+    audio.onended = function() { document.getElementById("playPauseBtn").textContent = "▶"; };
 }
 
 function formatTime(s) {
     if (!s || isNaN(s)) return "0:00";
-    var m = Math.floor(s / 60);
-    var sec = Math.floor(s % 60);
-    return m + ":" + (sec < 10 ? "0" + sec : sec);
+    return Math.floor(s/60) + ":" + (Math.floor(s%60) < 10 ? "0" + Math.floor(s%60) : Math.floor(s%60));
 }
 
 function togglePlayPause() {
     var audio = document.getElementById("playerAudio");
-    if (audio.paused) {
-        audio.play();
-        document.getElementById("playPauseBtn").textContent = "⏸";
-    } else {
-        audio.pause();
-        document.getElementById("playPauseBtn").textContent = "▶";
-    }
+    if (audio.paused) { audio.play(); document.getElementById("playPauseBtn").textContent = "⏸"; }
+    else { audio.pause(); document.getElementById("playPauseBtn").textContent = "▶"; }
 }
 
 function closePlayer() {
@@ -315,124 +279,90 @@ function closePlayer() {
     audio.pause();
     audio.src = "";
     currentKey = null;
-    document.getElementById("playerModal").style.display = "none";
+    document.getElementById("playerModal").classList.remove("show");
 }
 
 function deleteRec() {
-    document.getElementById("playerModal").style.display = "none";
-    document.getElementById("deleteModal").style.display = "flex";
+    document.getElementById("playerModal").classList.remove("show");
+    document.getElementById("deleteModal").classList.add("show");
 }
 
 function confirmDelete() {
-    if (currentKey) {
-        delete recs[currentKey];
-        currentKey = null;
-    }
+    if (currentKey) { delete recs[currentKey]; currentKey = null; }
     closeDeleteModal();
     render();
 }
 
 function closeDeleteModal() {
-    document.getElementById("deleteModal").style.display = "none";
+    document.getElementById("deleteModal").classList.remove("show");
 }
 
-var shareRecordings = [];
-
+// Share functions
 function shareAllRecordings() {
     shareRecordings = Object.entries(recs);
     if (shareRecordings.length === 0) {
         document.getElementById("shareStatus").textContent = "没有录音可分享";
         document.getElementById("shareActionBtn").textContent = "好的";
         document.getElementById("shareActionBtn").onclick = closeShareModal;
-        document.getElementById("shareModal").style.display = "flex";
+        document.getElementById("shareModal").classList.add("show");
         return;
     }
-    
     document.getElementById("shareStatus").textContent = "共 " + shareRecordings.length + " 条录音";
-    document.getElementById("shareProgressBar").style.width = "0%";
-    document.getElementById("shareProgress").style.display = "none";
+    document.getElementById("shareProgress").value = 0;
+    document.getElementById("shareProgressWrap").style.display = "none";
     document.getElementById("shareActionBtn").textContent = "开始分享";
     document.getElementById("shareActionBtn").onclick = doShare;
-    document.getElementById("shareModal").style.display = "flex";
+    document.getElementById("shareModal").classList.add("show");
 }
 
 function closeShareModal() {
-    document.getElementById("shareModal").style.display = "none";
+    document.getElementById("shareModal").classList.remove("show");
 }
 
 function doShare() {
     document.getElementById("shareStatus").textContent = "正在打包...";
-    document.getElementById("shareProgress").style.display = "block";
-    document.getElementById("shareActionBtn").textContent = "处理中...";
+    document.getElementById("shareProgressWrap").style.display = "block";
+    document.getElementById("shareActionBtn").textContent = "打包中...";
     document.getElementById("shareActionBtn").disabled = true;
     
-    if (typeof JSZip !== 'undefined') {
-        var zip = new JSZip();
-        for (var i = 0; i < recordings.length; i++) {
-            zip.file(recordings[i][0] + ".webm", recordings[i][1]);
-        }
-        zip.generateAsync({type: "blob"}, function metadata(p) {
-            document.getElementById("shareProgressBar").style.width = (p.percent) + "%";
-        }).then(function(zipBlob) {
-            document.getElementById("shareStatus").textContent = "打包完成！";
-            document.getElementById("shareProgressBar").style.width = "100%";
-            
-            var url = URL.createObjectURL(zipBlob);
-            var a = document.createElement("a");
-            a.href = url;
-            a.download = "recordings.zip";
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            setTimeout(function() {
-                closeShareModal();
-                document.getElementById("shareBtn").textContent = "分享";
-            }, 1500);
-        });
-    } else {
-        // Download each file
-        var idx = 0;
-        function downloadNext() {
-            if (idx < shareRecordings.length) {
-                document.getElementById("shareStatus").textContent = "下载 " + (idx+1) + "/" + shareRecordings.length;
-                document.getElementById("shareProgressBar").style.width = ((idx / shareRecordings.length) * 100) + "%";
-                
-                var r = shareRecordings[idx];
-                var url = URL.createObjectURL(r[1]);
-                var a = document.createElement("a");
-                a.href = url;
-                a.download = r[0] + ".webm";
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                idx++;
-                setTimeout(downloadNext, 300);
-            } else {
-                document.getElementById("shareProgressBar").style.width = "100%";
-                setTimeout(function() {
-                    closeShareModal();
-                    document.getElementById("shareBtn").textContent = "分享";
-                }, 1000);
-            }
-        }
-        downloadNext();
+    if (typeof JSZip === "undefined") {
+        document.getElementById("shareStatus").textContent = "正在加载打包工具...";
+        var script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+        script.onload = startZipProcess;
+        script.onerror = function() {
+            document.getElementById("shareStatus").textContent = "加载失败，请刷新后重试";
+            document.getElementById("shareActionBtn").textContent = "重试";
+            document.getElementById("shareActionBtn").disabled = false;
+        };
+        document.head.appendChild(script);
+        return;
     }
+    startZipProcess();
+}
+
+function startZipProcess() {
+    var zip = new JSZip();
+    for (var i = 0; i < shareRecordings.length; i++) {
+        zip.file(shareRecordings[i][0] + ".webm", shareRecordings[i][1]);
+    }
+    document.getElementById("shareStatus").textContent = "正在压缩...";
+    zip.generateAsync({type: "blob"}, function(m) {
+        document.getElementById("shareProgress").value = m.percent;
+    }).then(function(zipBlob) {
+        document.getElementById("shareProgress").value = 100;
+        document.getElementById("shareStatus").textContent = "打包完成！";
+        var url = URL.createObjectURL(zipBlob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "recordings.zip";
+        a.click();
+        URL.revokeObjectURL(url);
+        setTimeout(closeShareModal, 1500);
+    });
 }
 
 render();
 </script>
-
-<div id="shareModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:#1c1c1e;border-radius:20px;padding:25px;width:90%;max-width:350px;color:#fff;text-align:center;">
-        <div style="font-size:18px;font-weight:600;margin-bottom:15px;">分享录音</div>
-        <div id="shareStatus" style="font-size:14px;color:#8e8e93;margin-bottom:20px;">准备中...</div>
-        <div id="shareProgress" style="display:none;margin-bottom:20px;">
-            <div style="width:100%;height:4px;background:#3a3a3c;border-radius:2px;">
-                <div id="shareProgressBar" style="width:0%;height:100%;background:#007aff;border-radius:2px;transition:width 0.3s;"></div>
-            </div>
-        </div>
-        <button id="shareActionBtn" onclick="doShare()" style="padding:12px 40px;background:#007aff;border:none;border-radius:25px;color:#fff;font-size:16px;cursor:pointer;width:100%;">开始分享</button>
-        <button onclick="closeShareModal()" style="margin-top:10px;padding:12px;background:none;border:none;color:#8e8e93;font-size:14px;cursor:pointer;width:100%;">取消</button>
-    </div>
-</div></body>
+</body>
 </html>
